@@ -14,7 +14,6 @@ git folder, but it can be downloaded from the internet; instructions for obtaini
 data are included in the Jupyter notebook.
 
 ## Tools used
-
-Data processing and analysis: Python, pandas
-Machine learning: scikit-learn
-Visualization: matplotlib, seaborn
+- Data processing and analysis: Python, pandas
+- Machine learning: scikit-learn
+- Visualization: matplotlib, seaborn
