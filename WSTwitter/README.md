@@ -5,11 +5,11 @@ The geographical distribution of tweets is also studied.  The rate of tweets as 
 
 ## Files
 
-**CountyStudy.ipynb**:  A Jupyter notebook including python code, explanation, and results.  
+**TwitterAnalysisWorldSeries.ipynb**:  A Jupyter notebook including python code, explanation, and results.  
 The code has been tested in Python 3.  The data used for the analysis is not included in the
-git folder.  The data was collected using the 
+git folder.  The data was collected using TwitterStreamToFile.py (slightly modified).
 
-**twitterStreamToFile.py**: A python script which uses the tweepy package to collect
+**TwitterStreamToFile.py**: A python script which uses the tweepy package to collect
 tweets using the Twitter streaming API. The tweets are saved to a text file in JSON format.
 
 ## Tools used
