@@ -16,7 +16,7 @@ if __name__ == "__main__":
         
     #Generate random dataset
     
-    nData = 100000
+    nData = 10000
     err_size = 0.3
     rng = np.random.RandomState(1)
     
@@ -56,8 +56,8 @@ if __name__ == "__main__":
     
     
     
-    my_tree = CartTree(max_depth=2, min_events_split=10)  #hmm. what I call max_depth=4 is the same as sklearn's max_depth=3
-        
+    my_tree = CartTree(max_depth=3, min_events_split=10)  
+    
     
     my_tree.fit(x1, y_val)
 

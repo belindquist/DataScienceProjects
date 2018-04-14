@@ -132,7 +132,7 @@ class CartTree:
         
     def create_base_node(self):
         
-        base_node = TreeNode(self.__x_vals, self.__y_vals, level=1)
+        base_node = TreeNode(self.__x_vals, self.__y_vals, level=0)
         self.__base_node = base_node
         return base_node
         
@@ -315,14 +315,14 @@ class CartTree:
         return np.array(my_pred)
     
     def print(self): 
-        start_level=1
+        start_level=0
         depth = self.__max_depth-start_level + 1
-        buffer = [ " "*100 for i in range(depth)]
+        buffer = [ " "*135 for i in range(depth)]
         self.print_node(self.__base_node,start_level=start_level,leaf_loc=0,buffer=buffer)
         for line in buffer:
             print(line)
         
-    def print_node(self,node,start_level=1,leaf_loc=0,buffer=[]):
+    def print_node(self,node,start_level=0,leaf_loc=0,buffer=[]):
         #print("node lvl ",node.level, "idx ",node.idx, " < ",node.cut_val, "location = ",leaf_loc)
         
         #x_width = pow(2,self.__max_depth-start_level) 
@@ -331,7 +331,9 @@ class CartTree:
         x_base = 0.5 + 0.5*pow(2,y_loc)  #1, 1.5, 2.5, 4.5
         x_loc = x_base + leaf_loc*pow(2,y_loc)
         #print("x, y = {},{}".format(x_loc,y_loc))
-        node_string = "ix{}<{:.2f}".format(node.idx,node.cut_val)
+        node_string = "  leaf     "
+        if node.left and node.right:
+            node_string = "ix{}<{:.2f}".format(node.idx,node.cut_val)
         node_string = int(8*x_loc)*" " + node_string
         #print(node_string)
         add_to_buffer(buffer,node.level-start_level, node_string)
@@ -340,8 +342,4 @@ class CartTree:
             self.print_node(node.left, start_level, leaf_loc=2*leaf_loc, buffer=buffer)
             self.print_node(node.right, start_level, leaf_loc=2*leaf_loc+1, buffer=buffer)
 
-#        0
-#    0       1  
-#  0   1   2   3
-# 0 1 2 3 4 5 6 7    
         
