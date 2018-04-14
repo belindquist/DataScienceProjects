@@ -8,7 +8,6 @@ Created on Fri Apr 13 17:52:13 2018
 
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.tree import DecisionTreeRegressor
 
 
 
@@ -24,14 +23,6 @@ def add_to_buffer(input_buffer, index, new_string):
     
     input_buffer[index] = ''.join(l1)
     
-#str1 = "he 1 w      "
-#str2 = "ab "
-#l1 = list(str1)
-##print(str1|str2)
-#l1[9:] = str2
-#print(''.join(l1))
-
-
 
 def calc_sumsq_err(vals):
     
@@ -82,17 +73,27 @@ class TreeNode:
         return sumsqerr_left + sumsqerr_right
     
     def divide(self, idx, cut, min_size):
-        y_left = []
+#        print("running divide")
+#        print("yvals shape = ",self.y_vals.shape)
+        y_left = [] #np.array([])
         x_left = []
-        y_right = []
+        y_right = [] #np.array([])
         x_right = []
+        
         for i in range(len(self.x_vals)):
             if self.x_vals[i][idx]  < cut:
                 x_left.append( self.x_vals[i])
-                y_left.append( self.y_vals[i] )
+             #   a_left = np.append(y_left, self.y_vals[i] )
+                y_left.append( self.y_vals[i])
             else:
                 x_right.append( self.x_vals[i])
-                y_right.append( self.y_vals[i] )
+             #   a_right = np.append(y_right, self.y_vals[i] )
+                y_right.append( self.y_vals[i])
+
+        y_left = np.array(y_left)
+        y_right = np.array(y_right)
+        
+
         left_tree = None 
         right_tree = None
         
@@ -119,7 +120,8 @@ class CartTree:
     def fit(self, x_data, y_data):
         
         self.__x_vals = x_data.copy()
-        self.__y_vals = y_data.copy()
+        n_rows = len(y_data)
+        self.__y_vals = y_data.reshape(n_rows,).copy()
         
         print("fitting {} events".format(len(self.__x_vals)))
 
@@ -159,12 +161,46 @@ class CartTree:
             best_idx = -1
             best_cut = 0
 
-            for var_idx in range(n_vars):            
-                for var_row in range(n_rows):
 
-                    cut_val = base_node.x_vals[var_row][var_idx]
+            for var_idx in range(n_vars):      
+                
+                vals_sorted = [ (base_node.x_vals[i][var_idx], base_node.y_vals[i]) \
+                                 for i in range(n_rows) ]
+                
+                vals_sorted.sort(key=lambda x: x[0])
+                
+                yvals_sorted = np.array([ val[1] for val in vals_sorted])
+                
+                
+                #print("x type = ",type(base_node.x_vals))
+                #print(type(vals_sorted))
+                #print(vals_sorted)
+                vals_left = vals_sorted
+#                vals_right = []
+                
+              #  print("yvals type = ",type(base_node.y_vals))
+#                print(base_node.y_vals.shape)
+                sums_left = self.calc_sums(base_node.y_vals)
+                sums_right = self.calc_sums(np.empty(0))
+                
+                
+                for var_row in range(n_rows-1):
+                    #vals_right.append(vals_left.pop())
+#                    print("left len = {}, right = {}".format(len(vals_left),len(vals_right)))
+#                    print("cut = ",cut_val)
+#                    print(vals_right)
+                    #cut_val = base_node.x_vals[var_row][var_idx]
                     #print("Checking split for ",var_idx," < ",cut_val)
-                    score = base_node.get_score(var_idx,cut_val)
+#                    score = base_node.get_score(var_idx,cut_val)
+                    value_to_move = vals_left.pop()
+                    sums_left, sums_right = self.update_scores(sums_left, sums_right, value_to_move)
+                    
+                    score = self.sums_to_score(sums_left, sums_right)
+                    
+                    cut_val = value_to_move[0]
+
+#                    score = self.get_score(vals_left, vals_right)
+                    
                     #print("score = ",score)
                     if not(started) or score < best_score:
                         started=True
@@ -185,6 +221,74 @@ class CartTree:
             #print("Done splitting")
             pass
             
+    def get_score(self, vals_left, vals_right):
+        #vals_left/right is list of tuples: [(x0,y0), (x1,y1)...]            
+        
+        sumsqerr_left = self.calc_sumsq_err(vals_left)
+        sumsqerr_right = self.calc_sumsq_err(vals_right)
+        
+        return sumsqerr_left + sumsqerr_right
+   
+    
+    def calc_sumsq_err(self,vals):
+        #vals is list of tuples: [(x0,y0), (x1,y1)...] 
+        #function returns variance of y_i.
+    
+        num_vals = len(vals)
+        if num_vals == 0:
+            return 0
+        else:
+            sum_val = 0
+            sum_sq = 0 
+
+            for value in vals:
+                sum_val += value[1]
+                sum_sq += value[1]*value[1]
+    
+        # sum_i (x_i - mu)^2
+        #  =  sum_i (x_i)^2 - 2*mu*sum_i x_i  + N*mu^2
+        #  =  sum_sq   - 2*mu * sum_val + mu*sum_val
+        # =  sum_sq - sum_val*sum_val/N
+        # = N * [mean(x^2) - mean(x)*mean(x)]
+
+        return sum_sq - sum_val*sum_val/num_vals
+
+    def calc_sums(self,vals):
+        
+        num_vals = len(vals)
+        
+        sum_val = vals.sum()
+        sum_sq = np.dot(vals,vals)
+        
+        return (sum_sq, sum_val, num_vals)
+    
+
+    def update_scores(self, tuple_left, tuple_right, value_to_move):
+        #each tuple contains (sum_y^2, sum_y, N) for the left/right branch, respectively
+        #we move value_to_move from the left to the right branch
+        #we then update the values of tuple_left/right, and return these tuples.
+        
+        
+        new_left  = (tuple_left[0] - value_to_move[1]*value_to_move[1],
+                     tuple_left[1] - value_to_move[1],
+                     tuple_left[2] - 1
+                     )
+
+        new_right  = (tuple_right[0] + value_to_move[1]*value_to_move[1],
+                     tuple_right[1] + value_to_move[1],
+                     tuple_right[2] + 1
+                     )
+        
+        return new_left, new_right
+
+    def sums_to_score(self, sums_left, sums_right):
+        
+        score = sums_left[0] - sums_left[1]*sums_left[1]/sums_left[2] \
+            + sums_right[0] - sums_right[1]*sums_right[1]/sums_right[2]
+
+        return score
+        
+        
     def get_pred(self,x_val):
         
         node = self.__base_node
@@ -241,82 +345,3 @@ class CartTree:
 #  0   1   2   3
 # 0 1 2 3 4 5 6 7    
         
-        
-        
-#random dataset
-
-nData = 1000
-err_size = 0.3
-rng = np.random.RandomState(1)
-
-x1_max = 2
-x2_max = 4
-x1 = x1_max*rng.rand(nData,1)
-x2 = x2_max*rng.rand(nData,1)
-err = rng.normal(0,err_size, nData).reshape(nData,1)
-
-#help(rng)
-
-print(type(x1))
-print(x1.mean())
-print(x2.mean())
-print(err.mean())
-
-#y_val = 3.5 + 2*np.sin(3*x1 + 0.4) + err
-y_val = 3.5 + 2*np.sin(3*x1 + 0.4) + err
-
-
-#print(y_val.mean())
-#print(len(x1))
-
-#print(len(y_val))
-
-#print(err)
-#print(x1)
-#print(y_val)
-
-tree_1 = DecisionTreeRegressor(max_depth=3)
-
-tree_1.fit(x1, y_val)
-#X_test = np.arange(0, 5, 0.1)[:,np.newaxis]
-X_test = np.arange(0, x1_max, 0.02)
-nlen = len(X_test)
-X_test = X_test.reshape(nlen,1)
-#print(type(X_test))
-#print(len(X_test))
-#print(X_test)
-
-y_pred = tree_1.predict(X_test)
-plt.figure()
-
-plt.scatter(x1, y_val)
-plt.plot(X_test, y_pred, color='red')
-
-#plt.show()
-
-        
-    
-my_tree = CartTree(max_depth=4, min_events_split=10)  #hmm. what I call max_depth=4 is the same as sklearn's max_depth=3
-    
-my_tree.fit(x1, y_val)
-
-
-#print(type(y_pred))
-#y_mypred = my_tree.get_pred(X_test[4])
-#print("my predction for {} = {} ".format(X_test[4],y_mypred))
-y_mypred = my_tree.predict(X_test)
-
-#print(type(y_mypred))
-
-my_tree.print()
-
-#print(y_mypred)
-#print(y_pred)
-
-#y_mypred = my_tree.predict(X_test)
-####plt.figure()
-
-####plt.scatter(x1, y_val)
-plt.plot(X_test, y_mypred, color='orange')
-
-plt.show()
