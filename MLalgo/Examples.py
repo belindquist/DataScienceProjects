@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Comparison of different ML algorithms (both "home-made" and from public packages) on a common dataset. 
 Created on Fri Apr 13 17:52:13 2018
 
 @author: blindqui
