@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Implementation of DecisionTree using CART algorithm.
+
 Created on Fri Apr 13 17:52:13 2018
 
 @author: blindqui
